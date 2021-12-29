@@ -575,12 +575,6 @@ void prepare_win_double_scan_success (char *test_file_path, char *dir_file_path,
 
     expect_wrapper_fim_db_get_count_entries(syscheck.database, 50000);
 
-    // check_deleted_files
-    expect_value(__wrap_fim_db_get_not_scanned, fim_sql, syscheck.database);
-    expect_value(__wrap_fim_db_get_not_scanned, storage, FIM_DB_DISK);
-    will_return(__wrap_fim_db_get_not_scanned, NULL);
-    will_return(__wrap_fim_db_get_not_scanned, FIMDB_OK);
-
     expect_string(__wrap_stat, __file, dir_file_path);
     will_return(__wrap_stat, directory_stat);
     will_return(__wrap_stat, 0);
@@ -610,14 +604,7 @@ void prepare_win_double_scan_success (char *test_file_path, char *dir_file_path,
         // fim_json_event;
     }
 
-    expect_any_always(__wrap_fim_db_is_full, fim_sql);
-    will_return(__wrap_fim_db_is_full, false);
-    will_return_count(__wrap_fim_db_is_full, true, 2);
-
     will_return(__wrap_readdir, NULL);
-
-    expect_value(__wrap_fim_db_set_all_unscanned, fim_sql, syscheck.database);
-    will_return(__wrap_fim_db_set_all_unscanned, FIMDB_OK);
 }
 
 /* tests */
@@ -1924,9 +1911,6 @@ static void test_fim_scan_db_full_double_scan(void **state) {
 
     expect_string(__wrap__minfo, formatted_msg, FIM_FREQUENCY_STARTED);
 
-    expect_value(__wrap_fim_db_set_all_unscanned, fim_sql, syscheck.database);
-    will_return(__wrap_fim_db_set_all_unscanned, 0);
-
     // fim_diff_folder_size
     expect_string(__wrap_IsDir, file, "queue/diff/local");
     will_return(__wrap_IsDir, 0);
@@ -1960,15 +1944,7 @@ static void test_fim_scan_db_full_double_scan(void **state) {
 
     expect_wrapper_fim_db_get_count_entries(syscheck.database, 50000);
 
-    // check_deleted_files
-    expect_value(__wrap_fim_db_get_not_scanned, fim_sql, syscheck.database);
-    expect_value(__wrap_fim_db_get_not_scanned, storage, FIM_DB_DISK);
-    will_return(__wrap_fim_db_get_not_scanned, NULL);
-    will_return(__wrap_fim_db_get_not_scanned, FIMDB_OK);
-
     // Second scan
-    expect_value(__wrap_fim_db_is_full, fim_sql, syscheck.database);
-    will_return(__wrap_fim_db_is_full, false);
 
     expect_string(__wrap_lstat, filename, "/boot");
     will_return(__wrap_lstat, &directory_buf);
@@ -2004,9 +1980,6 @@ static void test_fim_scan_db_full_double_scan(void **state) {
         will_return(__wrap_fim_db_file_update, FIMDB_FULL);
     }
 
-    expect_value(__wrap_fim_db_is_full, fim_sql, syscheck.database);
-    will_return(__wrap_fim_db_is_full, true);
-
     will_return(__wrap_readdir, NULL);
 
     // fim_check_db_state
@@ -2034,9 +2007,6 @@ static void test_fim_scan_db_full_not_double_scan(void **state) {
     expect_function_call_any(__wrap_pthread_mutex_unlock);
 
     expect_string(__wrap__minfo, formatted_msg, FIM_FREQUENCY_STARTED);
-
-    expect_value(__wrap_fim_db_set_all_unscanned, fim_sql, syscheck.database);
-    will_return(__wrap_fim_db_set_all_unscanned, 0);
 
     // fim_diff_folder_size
     expect_string(__wrap_IsDir, file, "queue/diff/local");
@@ -2070,15 +2040,6 @@ static void test_fim_scan_db_full_not_double_scan(void **state) {
     }
 
     expect_wrapper_fim_db_get_count_entries(syscheck.database, 50000);
-
-    // check_deleted_files
-    expect_value(__wrap_fim_db_get_not_scanned, fim_sql, syscheck.database);
-    expect_value(__wrap_fim_db_get_not_scanned, storage, FIM_DB_DISK);
-    will_return(__wrap_fim_db_get_not_scanned, NULL);
-    will_return(__wrap_fim_db_get_not_scanned, FIMDB_OK);
-
-    expect_value(__wrap_fim_db_is_full, fim_sql, syscheck.database);
-    will_return(__wrap_fim_db_is_full, true);
 
     expect_wrapper_fim_db_get_count_entries(syscheck.database, 50000);
 
@@ -2138,22 +2099,10 @@ static void test_fim_scan_realtime_enabled(void **state) {
         will_return(__wrap_readdir, NULL);
     }
 
-    // check_deleted_files
-    expect_value(__wrap_fim_db_get_not_scanned, fim_sql, syscheck.database);
-    expect_value(__wrap_fim_db_get_not_scanned, storage, FIM_DB_DISK);
-    will_return(__wrap_fim_db_get_not_scanned, NULL);
-    will_return(__wrap_fim_db_get_not_scanned, FIMDB_OK);
-
-    expect_value(__wrap_fim_db_set_all_unscanned, fim_sql, syscheck.database);
-    will_return(__wrap_fim_db_set_all_unscanned, 0);
-
     // fim_scan
     expect_wrapper_fim_db_get_count_entries(syscheck.database, 50000);
 
     expect_function_call(__wrap_realtime_sanitize_watch_map);
-
-    expect_value(__wrap_fim_db_is_full, fim_sql, syscheck.database);
-    will_return(__wrap_fim_db_is_full, true);
 
     // fim_check_db_state
     expect_wrapper_fim_db_get_count_entries(syscheck.database, 50000);
@@ -2218,17 +2167,7 @@ static void test_fim_scan_db_free(void **state) {
 
     expect_wrapper_fim_db_get_count_entries(syscheck.database, 1000);
 
-    // check_deleted_files
-    expect_value(__wrap_fim_db_get_not_scanned, fim_sql, syscheck.database);
-    expect_value(__wrap_fim_db_get_not_scanned, storage, FIM_DB_DISK);
-    will_return(__wrap_fim_db_get_not_scanned, NULL);
-    will_return(__wrap_fim_db_get_not_scanned, FIMDB_OK);
-
-
     expect_wrapper_fim_db_get_count_entries(syscheck.database, 1000);
-
-    expect_value(__wrap_fim_db_set_all_unscanned, fim_sql, syscheck.database);
-    will_return(__wrap_fim_db_set_all_unscanned, 0);
 
     expect_string(__wrap__minfo, formatted_msg, "(6038): Sending DB back to normal alert.");
     expect_string(__wrap_send_log_msg, msg, "wazuh: FIM DB: {\"db_entry_file_limit\":50000,\"file_count\":1000,\"alert_type\":\"normal\"}");
@@ -2282,15 +2221,6 @@ static void test_fim_scan_no_limit(void **state) {
         will_return(__wrap_opendir, 1);
         will_return(__wrap_readdir, NULL);
     }
-
-    // check_deleted_files
-    expect_value(__wrap_fim_db_get_not_scanned, fim_sql, syscheck.database);
-    expect_value(__wrap_fim_db_get_not_scanned, storage, FIM_DB_DISK);
-    will_return(__wrap_fim_db_get_not_scanned, NULL);
-    will_return(__wrap_fim_db_get_not_scanned, FIMDB_OK);
-
-    expect_value(__wrap_fim_db_set_all_unscanned, fim_sql, syscheck.database);
-    will_return(__wrap_fim_db_set_all_unscanned, 0);
 
     // In fim_scan
     expect_string(__wrap__minfo, formatted_msg, FIM_FREQUENCY_ENDED);
@@ -2898,18 +2828,6 @@ static void test_fim_scan_db_full_not_double_scan(void **state) {
 
     expect_wrapper_fim_db_get_count_entries(syscheck.database, 50000);
 
-    // check_deleted_files
-    expect_value(__wrap_fim_db_get_not_scanned, fim_sql, syscheck.database);
-    expect_value(__wrap_fim_db_get_not_scanned, storage, FIM_DB_DISK);
-    will_return(__wrap_fim_db_get_not_scanned, NULL);
-    will_return(__wrap_fim_db_get_not_scanned, FIMDB_OK);
-
-    expect_value(__wrap_fim_db_set_all_unscanned, fim_sql, syscheck.database);
-    will_return(__wrap_fim_db_set_all_unscanned, 0);
-
-    expect_value_count(__wrap_fim_db_is_full, fim_sql, syscheck.database, 2);
-    will_return_count(__wrap_fim_db_is_full, true, 2);
-
     expect_wrapper_fim_db_get_count_entries(syscheck.database, 50000);
 
 
@@ -2970,16 +2888,8 @@ static void test_fim_scan_db_free(void **state) {
     }
 
     expect_wrapper_fim_db_get_count_entries(syscheck.database, 1000);
-    // check_deleted_files
-    expect_value(__wrap_fim_db_get_not_scanned, fim_sql, syscheck.database);
-    expect_value(__wrap_fim_db_get_not_scanned, storage, FIM_DB_DISK);
-    will_return(__wrap_fim_db_get_not_scanned, NULL);
-    will_return(__wrap_fim_db_get_not_scanned, FIMDB_OK);
 
     expect_wrapper_fim_db_get_count_entries(syscheck.database, 1000);
-
-    expect_value(__wrap_fim_db_set_all_unscanned, fim_sql, syscheck.database);
-    will_return(__wrap_fim_db_set_all_unscanned, 0);
 
     expect_string(__wrap__minfo, formatted_msg, "(6038): Sending DB back to normal alert.");
     expect_string(__wrap_send_log_msg, msg, "wazuh: FIM DB: {\"db_entry_file_limit\":50000,\"file_count\":1000,\"alert_type\":\"normal\"}");
@@ -3040,15 +2950,6 @@ static void test_fim_scan_no_limit(void **state) {
         will_return(__wrap_opendir, 1);
         will_return(__wrap_readdir, NULL);
     }
-
-    // check_deleted_files
-    expect_value(__wrap_fim_db_get_not_scanned, fim_sql, syscheck.database);
-    expect_value(__wrap_fim_db_get_not_scanned, storage, FIM_DB_DISK);
-    will_return(__wrap_fim_db_get_not_scanned, NULL);
-    will_return(__wrap_fim_db_get_not_scanned, FIMDB_OK);
-
-    expect_value(__wrap_fim_db_set_all_unscanned, fim_sql, syscheck.database);
-    will_return(__wrap_fim_db_set_all_unscanned, 0);
 
     expect_string(__wrap__minfo, formatted_msg, FIM_FREQUENCY_ENDED);
 
@@ -3825,11 +3726,6 @@ static void test_check_deleted_files(void **state) {
     expect_function_call_any(__wrap_pthread_rwlock_rdlock);
     expect_function_call_any(__wrap_pthread_rwlock_unlock);
 
-    expect_value(__wrap_fim_db_get_not_scanned, fim_sql, syscheck.database);
-    expect_value(__wrap_fim_db_get_not_scanned, storage, FIM_DB_DISK);
-    will_return(__wrap_fim_db_get_not_scanned, file);
-    will_return(__wrap_fim_db_get_not_scanned, FIMDB_OK);
-
     expect_value(__wrap_fim_db_delete_not_scanned, fim_sql, syscheck.database);
     will_return(__wrap_fim_db_delete_not_scanned, FIMDB_OK);
 
@@ -3837,10 +3733,6 @@ static void test_check_deleted_files(void **state) {
 }
 
 static void test_check_deleted_files_error(void **state) {
-    expect_value(__wrap_fim_db_get_not_scanned, fim_sql, syscheck.database);
-    expect_value(__wrap_fim_db_get_not_scanned, storage, FIM_DB_DISK);
-    will_return(__wrap_fim_db_get_not_scanned, NULL);
-    will_return(__wrap_fim_db_get_not_scanned, FIMDB_ERR);
 
     expect_string(__wrap__merror, formatted_msg, FIM_DB_ERROR_RM_NOT_SCANNED);
 
@@ -3906,8 +3798,6 @@ static void test_fim_realtime_event_file_missing(void **state) {
     expect_string(__wrap_fim_db_get_path, file_path, path);
     will_return(__wrap_fim_db_get_path, NULL);
 
-    expect_fim_db_get_path_from_pattern(syscheck.database, buff, NULL, FIM_DB_DISK, FIMDB_ERR);
-
     fim_realtime_event(path);
     errno = 0;
 }
@@ -3968,16 +3858,11 @@ static void test_fim_whodata_event_file_missing(void **state) {
     expect_string(__wrap_fim_db_get_path, file_path, "./test/test.file");
     will_return(__wrap_fim_db_get_path, NULL);
 
-    expect_fim_db_get_path_from_pattern(syscheck.database, "./test/test.file\\%", NULL, FIM_DB_DISK, FIMDB_ERR);
 #else
-    expect_wrapper_fim_db_get_paths_from_inode(syscheck.database, 606060, 12345678, paths);
-
     // Inside fim_process_missing_entry
     expect_value(__wrap_fim_db_get_path, fim_sql, syscheck.database);
     expect_string(__wrap_fim_db_get_path, file_path, "./test/test.file");
     will_return(__wrap_fim_db_get_path, NULL);
-
-    expect_fim_db_get_path_from_pattern(syscheck.database, "./test/test.file/%", NULL, FIM_DB_DISK, FIMDB_ERR);
 
     for(int i = 0; paths[i]; i++) {
         // Inside fim_process_missing_entry
@@ -3985,8 +3870,6 @@ static void test_fim_whodata_event_file_missing(void **state) {
         expect_value(__wrap_fim_db_get_path, fim_sql, syscheck.database);
         expect_string(__wrap_fim_db_get_path, file_path, paths[i]);
         will_return(__wrap_fim_db_get_path, NULL);
-
-        expect_fim_db_get_path_from_pattern(syscheck.database, "./test/test.file/%", NULL, FIM_DB_DISK, FIMDB_ERR);
     }
 #endif
 
@@ -4009,9 +3892,6 @@ static void test_fim_process_missing_entry_no_data(void **state) {
     expect_string(__wrap_fim_db_get_path, file_path, path);
     will_return(__wrap_fim_db_get_path, NULL);
 
-    expect_fim_db_get_path_from_pattern(syscheck.database, buff, NULL, FIM_DB_DISK, FIMDB_ERR);
-
-
     fim_process_missing_entry(path, FIM_REALTIME, NULL);
 }
 
@@ -4033,8 +3913,6 @@ static void test_fim_process_missing_entry_failure(void **state) {
     expect_value(__wrap_fim_db_get_path, fim_sql, syscheck.database);
     expect_string(__wrap_fim_db_get_path, file_path, path);
     will_return(__wrap_fim_db_get_path, NULL);
-
-    expect_fim_db_get_path_from_pattern(syscheck.database, buff, file, FIM_DB_DISK, FIMDB_OK);
 
     expect_value(__wrap_fim_db_process_missing_entry, fim_sql, syscheck.database);
     expect_value(__wrap_fim_db_process_missing_entry, file, file);
@@ -4111,9 +3989,6 @@ static void test_fim_process_wildcard_removed_no_data(void **state) {
     expect_string(__wrap_fim_db_get_path, file_path, directory0->path);
     will_return(__wrap_fim_db_get_path, NULL);
 
-    expect_fim_db_get_path_from_pattern(syscheck.database, buff, NULL, FIM_DB_DISK, FIMDB_ERR);
-
-
     fim_process_wildcard_removed(directory0);
 }
 
@@ -4135,13 +4010,6 @@ static void test_fim_process_wildcard_removed_failure(void **state) {
     expect_value(__wrap_fim_db_get_path, fim_sql, syscheck.database);
     expect_string(__wrap_fim_db_get_path, file_path, directory0->path);
     will_return(__wrap_fim_db_get_path, NULL);
-
-    expect_fim_db_get_path_from_pattern(syscheck.database, buff, file, FIM_DB_DISK, FIMDB_OK);
-
-    expect_value(__wrap_fim_db_remove_wildcard_entry, fim_sql, syscheck.database);
-    expect_value(__wrap_fim_db_remove_wildcard_entry, file, file);
-    expect_value(__wrap_fim_db_remove_wildcard_entry, storage, FIM_DB_DISK);
-    will_return(__wrap_fim_db_remove_wildcard_entry, FIMDB_ERR);
 
     expect_string(__wrap__merror, formatted_msg, error_msg);
 
@@ -4307,13 +4175,9 @@ static void test_update_wildcards_config_remove_config() {
     expect_string(__wrap_fim_db_get_path, file_path, resolvedpath2);
     will_return(__wrap_fim_db_get_path, NULL);
 
-    expect_fim_db_get_path_from_pattern(syscheck.database, pattern2, NULL, FIM_DB_DISK, FIMDB_ERR);
-
     expect_value(__wrap_fim_db_get_path, fim_sql, syscheck.database);
     expect_string(__wrap_fim_db_get_path, file_path, resolvedpath1);
     will_return(__wrap_fim_db_get_path, NULL);
-
-    expect_fim_db_get_path_from_pattern(syscheck.database, pattern1, NULL, FIM_DB_DISK, FIMDB_ERR);
 
     update_wildcards_config();
 
