@@ -641,21 +641,22 @@ class MasterHandler(server.AbstractServerHandler, c_common.WazuhCommon):
             ID of the asyncio task in charge of doing the sync process.
         received_file : asyncio.Event
             Asyncio event that is holding a lock while the files are not received.
-
-        Returns
-        -------
-        bytes
-            Result.
-        bytes
-            Response message.
         """
         logger = self.task_loggers['Integrity check']
         date_start_master = datetime.utcnow()
         logger.info(f"Starting.")
 
         logger.debug("Waiting to receive zip file from worker.")
-        await asyncio.wait_for(received_file.wait(),
-                               timeout=self.cluster_items['intervals']['communication']['timeout_receiving_file'])
+        try:
+            await asyncio.wait_for(received_file.wait(),
+                                   timeout=self.cluster_items['intervals']['communication']['timeout_receiving_file'])
+        except Exception:
+            # Notify the sending node to stop its task.
+            await self.send_request(
+                command=b'cancel_task',
+                data=task_id.encode() + b' ' + json.dumps(timeout_exc := exception.WazuhClusterError(3039),
+                                                          cls=c_common.WazuhJSONEncoder).encode())
+            raise timeout_exc
 
         # Full path where the zip sent by the worker is located.
         received_filename = self.sync_tasks[task_id].filename
@@ -715,12 +716,10 @@ class MasterHandler(server.AbstractServerHandler, c_common.WazuhCommon):
                     raise exc_info
 
                 # Send zip file to the worker into chunks.
-                await self.send_file(compressed_data)
+                await self.send_file(compressed_data, task_id)
                 logger.debug("Zip with files to be synced sent to worker.")
-
-                # Finish the synchronization process and notify where the file corresponding to the taskID is located.
-                result = await self.send_request(command=b'syn_m_c_e',
-                                                 data=task_id + b' ' + os.path.relpath(
+                # Notify what is the zip path for the current taskID.
+                result = await self.send_request(command=b'syn_m_c_e', data=task_id + b' ' + os.path.relpath(
                                                      compressed_data, common.wazuh_path).encode())
                 if isinstance(result, Exception):
                     raise result
@@ -729,17 +728,19 @@ class MasterHandler(server.AbstractServerHandler, c_common.WazuhCommon):
             except exception.WazuhException as e:
                 # Notify error to worker and delete its received file.
                 self.logger.error(f"Error sending files information: {e}")
-                result = await self.send_request(
+                await self.send_request(
                     command=b'syn_m_c_r', data=task_id + b' ' + json.dumps(e, cls=c_common.WazuhJSONEncoder).encode())
             except Exception as e:
                 # Notify error to worker and delete its received file.
                 self.logger.error(f"Error sending files information: {e}")
                 exc_info = json.dumps(exception.WazuhClusterError(1000, extra_message=str(e)),
                                       cls=c_common.WazuhJSONEncoder).encode()
-                result = await self.send_request(command=b'syn_m_c_r', data=task_id + b' ' + exc_info)
+                await self.send_request(command=b'syn_m_c_r', data=task_id + b' ' + exc_info)
             finally:
                 # Remove local file.
                 os.unlink(compressed_data)
+                # In case task was interrupted, remove its ID from the interrupted set.
+                self.interrupted_tasks.discard(task_id)
                 logger.debug("Finished sending files to worker.")
                 # Log 'Finished in' message only if there are no extra_valid files to sync.
                 if not self.extra_valid_requested:
@@ -751,8 +752,6 @@ class MasterHandler(server.AbstractServerHandler, c_common.WazuhCommon):
                         'tmp_date_start_master'].strftime(decimals_date_format)
                     self.integrity_sync_status['date_end_master'] = \
                         self.integrity_sync_status['date_end_master'].strftime(decimals_date_format)
-
-        return result
 
     async def sync_extra_valid(self, task_id: str, received_file: asyncio.Event):
         """Run extra valid sync process and set up necessary parameters.
@@ -790,8 +789,16 @@ class MasterHandler(server.AbstractServerHandler, c_common.WazuhCommon):
             Logger to use (can't use self since one of the task loggers will be used).
         """
         logger.debug("Waiting to receive zip file from worker.")
-        await asyncio.wait_for(received_file.wait(),
-                               timeout=self.cluster_items['intervals']['communication']['timeout_receiving_file'])
+        try:
+            await asyncio.wait_for(received_file.wait(),
+                                   timeout=self.cluster_items['intervals']['communication']['timeout_receiving_file'])
+        except Exception:
+            # Notify the sending node to stop its task.
+            await self.send_request(
+                command=b'cancel_task',
+                data=task_id.encode() + b' ' + json.dumps(timeout_exc := exception.WazuhClusterError(3039),
+                                                          cls=c_common.WazuhJSONEncoder).encode())
+            raise timeout_exc
 
         # Full path where the zip sent by the worker is located.
         received_filename = self.sync_tasks[task_id].filename
